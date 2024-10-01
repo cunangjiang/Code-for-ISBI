@@ -78,39 +78,3 @@ class HybridSTM(nn.Module): # Hybrid CNN-VMamba Block
         x = self.stvmunit2(stvmunit_feat, style=style)+ residual
 
         return x
-
-if __name__ == '__main__':
-    upscale = 4
-    inchans = 96
-    outchans = 96
-    height = 112
-    width = 112
-    dim = 96
-    depths = 2
-    drop_rate = 0.
-    drop_path = [0, 0.1]
-    drop_path_rate = 0.1
-    norm_layer=nn.LayerNorm
-    attn_drop_rate=0.
-    d_state=16
-    patch_size=4
-    inchans=96
-    outchans=96
-    patch_norm = True   
-
-    x = torch.randn(1, 96, height, width).cuda()
-    model = HybridSTM(inchans=inchans,
-                outchans=outchans,
-                dim=dim,
-                depth=depths,
-                d_state=d_state, # 20240109
-                drop=drop_rate, 
-                attn_drop=attn_drop_rate,
-                drop_path=drop_path,
-                norm_layer=norm_layer,
-                patch_size=patch_size,
-                patch_norm=patch_norm,
-                downsample=None,
-                use_checkpoint=False,).cuda()
-    out = model(x)
-    print(out.shape)
