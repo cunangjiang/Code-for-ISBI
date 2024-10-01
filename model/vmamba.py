@@ -573,53 +573,6 @@ class STVSSLayer(nn.Module):
             x = self.downsample(x)
 
         return x
-    
-
-if __name__ == '__main__':
-    upscale = 4
-    height = 112
-    width = 112
-    dim = 96
-    depths = 2
-    drop_rate = 0.
-    drop_path = [0, 0.1]
-    drop_path_rate = 0.1
-    norm_layer=nn.LayerNorm
-    attn_drop_rate=0.
-    d_state=16
-    patch_size=4
-    in_chans=3
-    patch_norm = True   
-
-    x = torch.randn((1, 3, height, width)).cuda()
-    patch_embed = PatchEmbed2D(patch_size=patch_size, in_chans=in_chans, embed_dim=dim,
-            norm_layer=norm_layer if patch_norm else None).cuda()
-    Block = STVSSBlock(
-                hidden_dim=dim,
-                drop_path=0.,
-                norm_layer=norm_layer,
-                attn_drop_rate=attn_drop_rate,
-                d_state=math.ceil(dim / 6) if d_state is None else d_state,
-            ).cuda()
-    Layer = STVSSLayer(
-                dim=dim,
-                depth=depths,
-                d_state=math.ceil(dim[0] / 6) if d_state is None else d_state, # 20240109
-                drop=drop_rate, 
-                attn_drop=attn_drop_rate,
-                drop_path=drop_path[1],
-                norm_layer=norm_layer,
-                downsample=None,
-                use_checkpoint=False,
-            ).cuda()
-    final_conv = nn.Conv2d(dim, 3, 1).cuda()
-    pos_drop = nn.Dropout(p=drop_rate)
-    x = patch_embed(x)
-    x = Layer(x)
-    out = pos_drop(x)
-    out = out.permute(0,3,1,2)
-    out = final_conv(out)
-    print(out.shape)
 
 
     
