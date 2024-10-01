@@ -101,20 +101,6 @@ class WavMCVM(nn.Module):
         self.conv_last = nn.Conv2d(in_channels=dim, out_channels=outchans, kernel_size=(3, 3), stride=1, padding=1)
         self.ffu = FFU(dim=dim)
 
-    # def refsobel(self, ref):
-    #     # 假设ref是torch.Tensor
-    #     ref = ref.detach().cpu().numpy()  # 转换为numpy数组
-    #     sobel_channels = []
-    #     for c in range(ref.shape[1]):  # 针对每个通道分别计算Sobel
-    #         ref_sx = cv2.Sobel(ref[:, c, :, :], cv2.CV_32F, 1, 0)
-    #         ref_sy = cv2.Sobel(ref[:, c, :, :], cv2.CV_32F, 0, 1)
-    #         ref_s = cv2.addWeighted(ref_sx, 0.5, ref_sy, 0.5, 0)
-    #         sobel_channels.append(ref_s)
-
-    #     ref_sobel = np.stack(sobel_channels, axis=1)  # 合并通道
-    #     ref_sobel = torch.from_numpy(ref_sobel).cuda()  # 转换回torch.Tensor并移动到原设备
-    #     return ref_sobel
-
     def wavelet_high_freq(self, image):
         # Convert tensor to NumPy for wavelet transform
         img_np = image.detach().cpu().numpy()  # 转换为 NumPy 数组 (N, C, H, W)
