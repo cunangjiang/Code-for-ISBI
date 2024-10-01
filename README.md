@@ -1,2 +1,2 @@
-# ISBI
-Wavelet Multi-Contrast Vision Mamba SR Network(WAVMCVM)
+# WavMCVM
+Wavelet Multi-Contrast Vision Mamba SR Network
