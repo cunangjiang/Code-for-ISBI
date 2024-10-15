@@ -51,9 +51,9 @@ class Conv2D(nn.Module):
 
 
 
-class FFU(torch.nn.Module):
+class ARFU(torch.nn.Module):
     def __init__(self, dim=96):
-        super(FFU, self).__init__()
+        super(ARFU, self).__init__()
         self.conv = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
         self.mul_conv1 = nn.Conv2d(dim*2, 192, kernel_size=3, stride=1, padding=1)
         self.mul_conv2 = nn.Conv2d(192, dim, kernel_size=3, stride=1, padding=1)
@@ -99,7 +99,7 @@ class WavMCVM(nn.Module):
         self.stvmunit = STVMUnit(inchans=dim, outchans=dim, dim=dim, depth=depth, d_state=d_state, drop=drop, attn_drop=attn_drop, drop_path=drop_path[0], norm_layer=norm_layer, patch_size=patch_size, patch_norm=patch_norm, is_cross=False, downsample=downsample, use_checkpoint=use_checkpoint)
         self.hybridstm = HybridSTM(inchans=dim, outchans=dim, dim=dim, depth=depth, d_state=d_state, drop=drop, attn_drop=attn_drop, drop_path=drop_path, norm_layer=norm_layer, patch_size=patch_size, patch_norm=patch_norm, downsample=None, use_checkpoint=False)
         self.conv_last = nn.Conv2d(in_channels=dim, out_channels=outchans, kernel_size=(3, 3), stride=1, padding=1)
-        self.ffu = FFU(dim=dim)
+        self.arfu = ARFU(dim=dim)
 
     def wavelet_high_freq(self, image):
         # Convert tensor to NumPy for wavelet transform
@@ -141,11 +141,11 @@ class WavMCVM(nn.Module):
 
         if self.upscale == 2:
 
-            fuse_1 = self.ffu(tar_lr, ref_1)
+            fuse_1 = self.arfu(tar_lr, ref_1)
             fuse_1 = self.hybridstm(fuse_1, style=ref_wavelet_1)
             fuse_1 = self.up(fuse_1)
 
-            fuse_2 = self.ffu(fuse_1, ref_0)
+            fuse_2 = self.arfu(fuse_1, ref_0)
             fuse_2 = self.hybridstm(fuse_2, style=F.interpolate(ref_wavelet_1, scale_factor=2, mode='bilinear', align_corners=False))
 
 
@@ -153,15 +153,15 @@ class WavMCVM(nn.Module):
 
         if self.upscale == 4:
 
-            fuse_0 = self.ffu(tar_lr, ref_2)
+            fuse_0 = self.arfu(tar_lr, ref_2)
             fuse_0 = self.hybridstm(fuse_0, style=ref_wavelet_2)
             fuse_0 = self.up(fuse_0)
 
-            fuse_1 = self.ffu(fuse_0, ref_1)
+            fuse_1 = self.arfu(fuse_0, ref_1)
             fuse_1 = self.hybridstm(fuse_1, style=ref_wavelet_1)
             fuse_1 = self.up(fuse_1)
 
-            fuse_2 = self.ffu(fuse_1, ref_0)
+            fuse_2 = self.arfu(fuse_1, ref_0)
             fuse_2 = self.hybridstm(fuse_2, style=F.interpolate(ref_wavelet_1, scale_factor=2, mode='bilinear', align_corners=False))
 
             out = self.conv_last(fuse_2)
