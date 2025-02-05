@@ -52,23 +52,50 @@ class Conv2D(nn.Module):
 
 
 class ARFU(torch.nn.Module):
-    def __init__(self, dim=96):
+    def __init__(self, dim=96, save_dir="feature_maps"):
         super(ARFU, self).__init__()
+
         self.conv = nn.Conv2d(dim, dim, kernel_size=3, stride=1, padding=1)
-        self.mul_conv1 = nn.Conv2d(dim*2, 192, kernel_size=3, stride=1, padding=1)
+        self.mul_conv1 = nn.Conv2d(dim, 192, kernel_size=3, stride=1, padding=1)
         self.mul_conv2 = nn.Conv2d(192, dim, kernel_size=3, stride=1, padding=1)
-        self.add_conv1 = nn.Conv2d(dim*2, 192, kernel_size=3, stride=1, padding=1)
+        self.add_conv1 = nn.Conv2d(dim, 192, kernel_size=3, stride=1, padding=1)
         self.add_conv2 = nn.Conv2d(192, dim, kernel_size=3, stride=1, padding=1)
 
         self.lrelu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
 
+        self.save_dir = save_dir
+        os.makedirs(self.save_dir, exist_ok=True)
+
+    def lightweight_fusion(self, tar_residual, ref_residual):
+        _, c, h, w = tar_residual.shape
+        
+        # 使用逐元素乘法代替矩阵乘法，减少计算复杂度
+        tar_m = tar_residual.view(tar_residual.size(0), tar_residual.size(1), -1)  # [B, C, H*W]
+        ref_m = ref_residual.view(ref_residual.size(0), ref_residual.size(1), -1)  # [B, C, H*W]
+        
+        # 计算元素级相似度矩阵，使用逐元素乘法替代矩阵乘法
+        matrix_tr = torch.sum(tar_m * ref_m, dim=1)  # [B, H*W], 按照C通道相乘后求和
+        matrix_tr = torch.tanh(matrix_tr)  # 激活函数
+        
+        # 计算新的特征表示，使用逐元素加权
+        cat_input = tar_m + matrix_tr.unsqueeze(1) * ref_m  # [B, C, H*W]
+        
+        # 恢复原形状
+        cat_input = cat_input.view(-1, c, h, w)  # 恢复成[B, C, H, W]
+        
+        return cat_input
+
     def forward(self, tar, ref):
         ref_residual = self.conv(self.conv(ref)-tar)+ref
         tar_residual = self.conv(tar-self.conv(ref))+tar
-        cat_input = torch.cat((tar_residual, ref_residual), dim=1)
+
+        cat_input = self.lightweight_fusion(tar_residual, ref_residual)
+
         mul = torch.sigmoid(self.mul_conv2(self.lrelu(self.mul_conv1(cat_input))))
         add = self.add_conv2(self.lrelu(self.add_conv1(cat_input)))
-        return tar * mul + add
+        output = mul * tar + add
+
+        return output
 
     
 
